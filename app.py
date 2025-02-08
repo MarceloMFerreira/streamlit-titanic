@@ -8,7 +8,7 @@ st.set_page_config(page_title="Análise Climática", layout="wide")
 
 # Carregar os dados
 def load_data():
-    df = pd.read_csv("https://raw.githubusercontent.com/MarceloMFerreira/archives/refs/heads/main/previsoes_tempo.csv")
+    df = pd.read_csv("https://raw.githubusercontent.com/MarceloMFerreira/archives/refs/heads/main/tempo_final.csv")
     df["Data"] = pd.to_datetime(df["Data"])
     return df
 
@@ -22,55 +22,63 @@ df_filtered = df[df["Cidade"].isin(cidades)]
 
 # Função para gerar histórias de clima
 def generate_stories(df):
+    df_filtered['Data'] = pd.to_datetime(df_filtered['Data'], errors='coerce')  # Certificar que 'Data' é datetime
     df_filtered['Data'] = df_filtered['Data'].dt.strftime('%Y-%m-%d')
+
     stories = []
     for _, row in df.iterrows():
-        # Usando a temperatura máxima para as análises
+        story = ""
+
         if row["Temp_Max"] > 30:
             if row["Condicao"] in ["Chuva", "Chuva forte", "Chuva com trovoada", "Períodos de chuva", "Chuvas e trovoadas ocasionais"]:
-                stories.append(f"Hoje, {row['Cidade']} está muito quente, com grandes chances de chuva, tornando o dia desconfortável.")
+                story = f"Hoje, {row['Cidade']} está muito quente, com grandes chances de chuva, tornando o dia desconfortável."
             elif row["Condicao"] in ["Nevoeiro", "Nublado", "Nebulosidade variável"]:
-                stories.append(f"Em {row['Cidade']}, o calor excessivo combinado com o tempo nublado pode tornar o clima abafado e desconfortável.")
+                story = f"Em {row['Cidade']}, o calor excessivo combinado com o tempo nublado pode tornar o clima abafado e desconfortável."
             elif row["Condicao"] == "Maioritariamente nublado":
-                stories.append(f"Em {row['Cidade']}, o calor excessivo combinado com um céu predominantemente nublado pode tornar o clima abafado.")
+                story = f"Em {row['Cidade']}, o calor excessivo combinado com um céu predominantemente nublado pode tornar o clima abafado."
             else:
-                stories.append(f"Hoje, {row['Cidade']} está bastante quente, ideal para atividades externas.")
+                story = f"Hoje, {row['Cidade']} está bastante quente, ideal para atividades externas."
 
         elif 18 <= row["Temp_Max"] <= 26:
             if row["Condicao"] in ["Chuva", "Chuva forte", "Chuva com trovoada", "Períodos de chuva", "Chuvas e trovoadas ocasionais"]:
-                stories.append(f"{row['Cidade']} tem uma temperatura agradável, mas a chuva pode atrapalhar atividades ao ar livre.")
+                story = f"{row['Cidade']} tem uma temperatura agradável, mas a chuva pode atrapalhar atividades ao ar livre."
             elif row["Condicao"] in ["Nublado", "Nebulosidade variável"]:
-                stories.append(f"{row['Cidade']} tem uma temperatura agradável, mas o céu nublado pode tornar as caminhadas menos agradáveis.")
+                story = f"{row['Cidade']} tem uma temperatura agradável, mas o céu nublado pode tornar as caminhadas menos agradáveis."
             elif row["Condicao"] == "Maioritariamente com sol":
-                stories.append(f"{row['Cidade']} tem um clima perfeito para atividades ao ar livre, com predominância de sol.")
+                story = f"{row['Cidade']} tem um clima perfeito para atividades ao ar livre, com predominância de sol."
             elif row["Condicao"] in ["Ventos fortes", "Tempestade com ventos fortes"]:
-                stories.append(f"{row['Cidade']} tem uma temperatura confortável, mas ventos fortes tornam as atividades ao ar livre mais difíceis.")
+                story = f"{row['Cidade']} tem uma temperatura confortável, mas ventos fortes tornam as atividades ao ar livre mais difíceis."
             else:
-                stories.append(f"{row['Cidade']} tem um clima perfeito para caminhadas ao ar livre.")
+                story = f"{row['Cidade']} tem um clima perfeito para caminhadas ao ar livre."
 
         elif row["Temp_Max"] < 18:
             if row["Condicao"] in ["Chuva", "Chuva forte", "Períodos de chuva"]:
-                stories.append(f"Em {row['Cidade']}, a temperatura baixa e a chuva forte tornam o dia desconfortável e pouco propício para atividades ao ar livre.")
+                story = f"Em {row['Cidade']}, a temperatura baixa e a chuva forte tornam o dia desconfortável e pouco propício para atividades ao ar livre."
             elif row["Condicao"] == "Neve":
-                stories.append(f"{row['Cidade']} está com temperatura baixa e neve, tornando o clima ideal para quem gosta de atividades de inverno.")
+                story = f"{row['Cidade']} está com temperatura baixa e neve, tornando o clima ideal para quem gosta de atividades de inverno."
             elif row["Condicao"] in ["Nublado", "Maioritariamente nublado"]:
-                stories.append(f"A temperatura está fria em {row['Cidade']}, e o céu nublado faz o dia parecer ainda mais gelado.")
+                story = f"A temperatura está fria em {row['Cidade']}, e o céu nublado faz o dia parecer ainda mais gelado."
             else:
-                stories.append(f"{row['Cidade']} tem um clima ameno, ótimo para relaxar em ambientes fechados.")
+                story = f"{row['Cidade']} tem um clima ameno, ótimo para relaxar em ambientes fechados."
 
-        # Condições extremas
         elif row["Condicao"] in ["Tempestade", "Neve", "Granizo"]:
-            stories.append(f"Em {row['Cidade']}, condições climáticas extremas, como {row['Condicao']}, tornam o dia mais difícil.")
+            story = f"Em {row['Cidade']}, condições climáticas extremas, como {row['Condicao']}, tornam o dia mais difícil."
 
-        # Condições com ventos fortes ou nevoeiro
         elif row["Condicao"] in ["Ventos fortes", "Tempestade com ventos fortes"]:
-            stories.append(f"Os ventos fortes em {row['Cidade']} tornam o clima mais intenso, ideal para se proteger em ambientes fechados.")
+            story = f"Os ventos fortes em {row['Cidade']} tornam o clima mais intenso, ideal para se proteger em ambientes fechados."
         elif row["Condicao"] == "Nevoeiro":
-            stories.append(f"Nevoeiro em {row['Cidade']} pode dificultar a visibilidade, cuidado nas estradas.")
+            story = f"Nevoeiro em {row['Cidade']} pode dificultar a visibilidade, cuidado nas estradas."
         elif row["Condicao"] in ["Trovoada em partes da zona", "Aguaceiro ou trovoada"]:
-            stories.append(f"Em {row['Cidade']}, a trovoada em partes da zona pode trazer chuvas e ventos fortes em algumas áreas.")
+            story = f"Em {row['Cidade']}, a trovoada em partes da zona pode trazer chuvas e ventos fortes em algumas áreas."
+
+        # 🔹 Se nenhuma condição for atendida, cria uma história genérica
+        if not story:
+            story = f"O clima em {row['Cidade']} hoje é {row['Condicao']}, com temperatura máxima de {row['Temp_Max']}°C."
+
+        stories.append(story)
 
     return stories
+
 
 
 # Gerando as histórias
