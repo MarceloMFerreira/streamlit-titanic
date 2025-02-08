@@ -8,7 +8,7 @@ st.set_page_config(page_title="Análise Climática", layout="wide")
 
 # Carregar os dados
 def load_data():
-    df = pd.read_csv("https://raw.githubusercontent.com/MarceloMFerreira/archives/refs/heads/main/previsoes_tempo.csv?token=GHSAT0AAAAAAC6TXMD3KE5WDN7PCJS7GTHOZ5HQPCQ")
+    df = pd.read_csv("https://raw.githubusercontent.com/MarceloMFerreira/archives/refs/heads/main/previsoes_tempo.csv")
     df["Data"] = pd.to_datetime(df["Data"])
     return df
 
