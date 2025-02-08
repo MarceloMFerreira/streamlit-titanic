@@ -8,7 +8,7 @@ st.set_page_config(page_title="Análise Climática", layout="wide")
 
 # Carregar os dados
 def load_data():
-    df = pd.read_csv("https://raw.githubusercontent.com/MarceloMFerreira/archives/refs/heads/main/previsoes_tempo%20(1).csv")
+    df = pd.read_csv("https://raw.githubusercontent.com/MarceloMFerreira/archives/refs/heads/main/previsoes_tempo.csv")
     df["Data"] = pd.to_datetime(df["Data"])
     return df
 
@@ -20,7 +20,70 @@ st.title("📊 Análise de Dados Meteorológicos")
 cidades = st.multiselect("Selecione as cidades:", df["Cidade"].unique(), default=df["Cidade"].unique())
 df_filtered = df[df["Cidade"].isin(cidades)]
 
-# Gráficos
+# Função para gerar histórias de clima
+def generate_stories(df):
+    df_filtered['Data'] = df_filtered['Data'].dt.strftime('%Y-%m-%d')
+    stories = []
+    for _, row in df.iterrows():
+        # Usando a temperatura máxima para as análises
+        if row["Temp_Max"] > 30:
+            if row["Condicao"] in ["Chuva", "Chuva forte", "Chuva com trovoada", "Períodos de chuva", "Chuvas e trovoadas ocasionais"]:
+                stories.append(f"Hoje, {row['Cidade']} está muito quente, com grandes chances de chuva, tornando o dia desconfortável.")
+            elif row["Condicao"] in ["Nevoeiro", "Nublado", "Nebulosidade variável"]:
+                stories.append(f"Em {row['Cidade']}, o calor excessivo combinado com o tempo nublado pode tornar o clima abafado e desconfortável.")
+            elif row["Condicao"] == "Maioritariamente nublado":
+                stories.append(f"Em {row['Cidade']}, o calor excessivo combinado com um céu predominantemente nublado pode tornar o clima abafado.")
+            else:
+                stories.append(f"Hoje, {row['Cidade']} está bastante quente, ideal para atividades externas.")
+
+        elif 18 <= row["Temp_Max"] <= 26:
+            if row["Condicao"] in ["Chuva", "Chuva forte", "Chuva com trovoada", "Períodos de chuva", "Chuvas e trovoadas ocasionais"]:
+                stories.append(f"{row['Cidade']} tem uma temperatura agradável, mas a chuva pode atrapalhar atividades ao ar livre.")
+            elif row["Condicao"] in ["Nublado", "Nebulosidade variável"]:
+                stories.append(f"{row['Cidade']} tem uma temperatura agradável, mas o céu nublado pode tornar as caminhadas menos agradáveis.")
+            elif row["Condicao"] == "Maioritariamente com sol":
+                stories.append(f"{row['Cidade']} tem um clima perfeito para atividades ao ar livre, com predominância de sol.")
+            elif row["Condicao"] in ["Ventos fortes", "Tempestade com ventos fortes"]:
+                stories.append(f"{row['Cidade']} tem uma temperatura confortável, mas ventos fortes tornam as atividades ao ar livre mais difíceis.")
+            else:
+                stories.append(f"{row['Cidade']} tem um clima perfeito para caminhadas ao ar livre.")
+
+        elif row["Temp_Max"] < 18:
+            if row["Condicao"] in ["Chuva", "Chuva forte", "Períodos de chuva"]:
+                stories.append(f"Em {row['Cidade']}, a temperatura baixa e a chuva forte tornam o dia desconfortável e pouco propício para atividades ao ar livre.")
+            elif row["Condicao"] == "Neve":
+                stories.append(f"{row['Cidade']} está com temperatura baixa e neve, tornando o clima ideal para quem gosta de atividades de inverno.")
+            elif row["Condicao"] in ["Nublado", "Maioritariamente nublado"]:
+                stories.append(f"A temperatura está fria em {row['Cidade']}, e o céu nublado faz o dia parecer ainda mais gelado.")
+            else:
+                stories.append(f"{row['Cidade']} tem um clima ameno, ótimo para relaxar em ambientes fechados.")
+
+        # Condições extremas
+        elif row["Condicao"] in ["Tempestade", "Neve", "Granizo"]:
+            stories.append(f"Em {row['Cidade']}, condições climáticas extremas, como {row['Condicao']}, tornam o dia mais difícil.")
+
+        # Condições com ventos fortes ou nevoeiro
+        elif row["Condicao"] in ["Ventos fortes", "Tempestade com ventos fortes"]:
+            stories.append(f"Os ventos fortes em {row['Cidade']} tornam o clima mais intenso, ideal para se proteger em ambientes fechados.")
+        elif row["Condicao"] == "Nevoeiro":
+            stories.append(f"Nevoeiro em {row['Cidade']} pode dificultar a visibilidade, cuidado nas estradas.")
+        elif row["Condicao"] in ["Trovoada em partes da zona", "Aguaceiro ou trovoada"]:
+            stories.append(f"Em {row['Cidade']}, a trovoada em partes da zona pode trazer chuvas e ventos fortes em algumas áreas.")
+
+    return stories
+
+
+# Gerando as histórias
+stories = generate_stories(df_filtered)
+
+# Adicionando as histórias ao dataframe
+df_filtered['História Climática'] = stories
+
+# Exibindo a tabela interativa com as histórias
+st.subheader("📅 Tabela de Dados Climáticos por Data e Cidade")
+st.dataframe(df_filtered[['Data', 'Cidade', 'Temp_Max', 'Temp_Min', 'Precipitacao', 'Condicao', 'História Climática']], use_container_width=True)
+
+# Gráficos de Análise
 st.subheader("Temperatura Máxima e Mínima por Data e Cidade")
 fig, ax = plt.subplots(figsize=(12, 6))
 sns.lineplot(data=df_filtered, x="Data", y="Temp_Max", hue="Cidade", marker="o", ax=ax)
@@ -37,48 +100,6 @@ plt.xlabel("Data")
 plt.ylabel("Temp Min (°C)")
 plt.xticks(rotation=45)
 st.pyplot(fig)
-
-st.subheader("Média de Temperaturas e Precipitação")
-df_pivot = df_filtered.pivot_table(values=["Temp_Max", "Temp_Min", "Precipitacao"], index=["Data", "Cidade"], aggfunc="mean").reset_index()
-
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.barplot(data=df_pivot, x="Data", y="Temp_Max", hue="Cidade", palette="tab10", ax=ax)
-plt.title("Média de Temp Max por Data e Cidade")
-plt.xticks(rotation=45)
-st.pyplot(fig)
-
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.barplot(data=df_pivot, x="Data", y="Temp_Min", hue="Cidade", palette="tab10", ax=ax)
-plt.title("Média de Temp Min por Data e Cidade")
-plt.xticks(rotation=45)
-st.pyplot(fig)
-
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.barplot(data=df_pivot, x="Data", y="Precipitacao", hue="Cidade", palette="tab10", ax=ax)
-plt.title("Média de Precipitação por Data e Cidade")
-plt.xticks(rotation=45)
-st.pyplot(fig)
-
-st.subheader("Temperatura e Precipitação por Condição do Tempo")
-df_grouped = df_filtered.groupby(["Cidade", "Condicao"], as_index=False)[["Temp_Max", "Temp_Min", "Precipitacao"]].mean()
-
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.barplot(data=df_grouped, x="Cidade", y="Temp_Max", hue="Condicao", palette="viridis", ax=ax)
-plt.title("Temperatura Máxima por Cidade e Condição")
-st.pyplot(fig)
-
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.barplot(data=df_grouped, x="Cidade", y="Temp_Min", hue="Condicao", palette="viridis", ax=ax)
-plt.title("Temperatura Mínima por Cidade e Condição")
-st.pyplot(fig)
-
-fig, ax = plt.subplots(figsize=(12, 6))
-sns.barplot(data=df_grouped, x="Cidade", y="Precipitacao", hue="Condicao", palette="viridis", ax=ax)
-plt.title("Precipitação por Cidade e Condição")
-st.pyplot(fig)
-
-# Ajustar a data para exibir de forma bonita (sem horário)
-df_filtered['Data'] = df_filtered['Data'].dt.strftime('%d/%m/%Y')
 
 # Precipitação
 df_pivot_precip = df_filtered.pivot_table(values="Precipitacao", index="Cidade", columns="Data", aggfunc="mean")
@@ -103,6 +124,5 @@ sns.heatmap(df_pivot_min, annot=True, cmap="coolwarm", fmt=".1f", ax=ax)
 plt.title("Temperatura Mínima por Cidade e Data")
 plt.xticks(rotation=45)
 st.pyplot(fig)
-
 
 st.write("📌 **Dica:** Selecione apenas algumas cidades para visualizar melhor os gráficos!")
