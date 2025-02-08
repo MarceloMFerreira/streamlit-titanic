@@ -77,23 +77,32 @@ sns.barplot(data=df_grouped, x="Cidade", y="Precipitacao", hue="Condicao", palet
 plt.title("Precipitação por Cidade e Condição")
 st.pyplot(fig)
 
-st.subheader("Heatmaps de Temperatura e Precipitação")
+# Ajustar a data para exibir de forma bonita (sem horário)
+df_filtered['Data'] = df_filtered['Data'].dt.strftime('%d/%m/%Y')
+
+# Precipitação
 df_pivot_precip = df_filtered.pivot_table(values="Precipitacao", index="Cidade", columns="Data", aggfunc="mean")
 fig, ax = plt.subplots(figsize=(12, 6))
 sns.heatmap(df_pivot_precip, annot=True, cmap="Blues", fmt=".1f", ax=ax)
 plt.title("Precipitação por Cidade e Data")
+plt.xticks(rotation=45)
 st.pyplot(fig)
 
+# Temperatura Máxima
 df_pivot_max = df_filtered.pivot_table(values="Temp_Max", index="Cidade", columns="Data", aggfunc="mean")
 fig, ax = plt.subplots(figsize=(12, 6))
 sns.heatmap(df_pivot_max, annot=True, cmap="coolwarm", fmt=".1f", ax=ax)
 plt.title("Temperatura Máxima por Cidade e Data")
+plt.xticks(rotation=45)
 st.pyplot(fig)
 
+# Temperatura Mínima
 df_pivot_min = df_filtered.pivot_table(values="Temp_Min", index="Cidade", columns="Data", aggfunc="mean")
 fig, ax = plt.subplots(figsize=(12, 6))
 sns.heatmap(df_pivot_min, annot=True, cmap="coolwarm", fmt=".1f", ax=ax)
 plt.title("Temperatura Mínima por Cidade e Data")
+plt.xticks(rotation=45)
 st.pyplot(fig)
+
 
 st.write("📌 **Dica:** Selecione apenas algumas cidades para visualizar melhor os gráficos!")
